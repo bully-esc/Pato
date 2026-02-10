@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Siempre Nosotros</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #fdfaf5;
+      --text: #3f2a30;
+      --pink-soft: #f9a8c2;
+      --pink-light: #ffc3d8;
+      --branch: #5c4033;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #content {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 6vh 6vw 10vh 8vw;
+      overflow-y: auto;
+    }
+
+    .poem-container {
+      max-width: 580px;
+      width: 100%;
+    }
+
+    #poem-lines {
+      margin-bottom: 3em;
+    }
+
+    .poem-line {
+      font-size: 1.38rem;
+      line-height: 1.75;
+      margin: 1.1em 0;
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 2.4s ease-out;
+      color: var(--text);
+    }
+
+    .poem-line.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #final-quote {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.32rem;
+      line-height: 1.8;
+      margin: 3.5em 0 2.5em;
+      opacity: 0;
+      transition: opacity 3.5s ease;
+      padding-left: 1.2em;
+      border-left: 3px solid var(--pink-soft);
+    }
+
+    #counter {
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      opacity: 0.85;
+      margin: 2.5em 0 1.2em;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .dedicatoria {
+      font-size: 1.9rem;
+      font-weight: 500;
+      color: var(--pink-soft);
+      opacity: 0;
+      transition: opacity 2.8s ease;
+      margin-top: 1em;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 1.2s ease;
+    }
+
+    .start-btn {
+      background: rgba(255,255,255,0.4);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(249,168,194,0.3);
+      border-radius: 50%;
+      width: 160px;
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.4s;
+      box-shadow: 0 6px 25px rgba(0,0,0,0.06);
+      pointer-events: auto;
+    }
+
+    .start-btn:hover {
+      transform: scale(1.08);
+      background: rgba(255,255,255,0.6);
+    }
+
+    .heart-icon {
+      font-size: 3.8rem;
+      color: var(--pink-soft);
+      animation: pulse 2.8s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50%     { transform: scale(1.14); }
+    }
+
+    .start-text {
+      margin-top: 12px;
+      font-size: 1.1rem;
+      color: #6b4a52;
+      font-weight: 400;
+    }
+
+    @media (max-width: 600px) {
+      #content {
+        padding: 8vh 10vw 12vh 10vw;
+      }
+      .poem-line {
+        font-size: 1.25rem;
+        line-height: 1.8;
+      }
+      #final-quote {
+        font-size: 1.2rem;
+      }
+      .dedicatoria {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="start-btn" id="startButton">
+    <div class="heart-icon">♡</div>
+    <div class="start-text">Toca, patito</div>
+  </div>
+</div>
+
+<div id="content">
+  <div class="poem-container">
+    <div id="poem-lines"></div>
+
+    <div id="final-quote">
+      «Andábamos sin buscarnos<br>pero sabiendo que andábamos<br>para encontrarnos»<br>
+      <small style="font-size:0.82rem; opacity:0.7; display:block; margin-top:1em;">
+        — Julio Cortázar
+      </small>
+    </div>
+
+    <div id="counter"></div>
+    <div class="dedicatoria">Te amo, patito</div>
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+  // Poema
+  const poemLines = [
+    "Desde que te vi, algo cambió en mí",
+    "Cada sonrisa tuya iluminó mi mundo",
+    "Y cada mirada me recordó lo que es amar",
+    "No hay distancia que pueda separar lo que sentimos"
+  ];
+
+  // Mostrar poema línea por línea
+  function showPoem() {
+    const container = document.getElementById('poem-lines');
+    poemLines.forEach((line, index) => {
+      const p = document.createElement('p');
+      p.className = 'poem-line';
+      p.textContent = line;
+      container.appendChild(p);
+      setTimeout(() => p.classList.add('visible'), 600 * index);
+    });
+
+    // Mostrar quote y dedicatoria después del poema
+    setTimeout(() => {
+      document.getElementById('final-quote').style.opacity = 1;
+      document.querySelector('.dedicatoria').style.opacity = 1;
+      document.getElementById('counter').style.opacity = 1;
+    }, poemLines.length * 600 + 800);
+  }
+
+  // Contador en tiempo real
+  function updateTimer() {
+    const startDate = new Date("2022-04-02T00:00:00").getTime();
+    const now = Date.now();
+    const diffMs = now - startDate;
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+    document.getElementById('counter').textContent = 
+      `${days} días  ·  ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+  }
+
+  // Animación simple de corazón en canvas (placeholder)
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  function drawHeart(x, y, size, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.bezierCurveTo(x, y - size/2, x - size, y - size/2, x - size, y);
+    ctx.bezierCurveTo(x - size, y + size/2, x, y + size, x, y + size*1.2);
+    ctx.bezierCurveTo(x, y + size, x + size, y + size/2, x + size, y);
+    ctx.bezierCurveTo(x + size, y - size/2, x, y - size/2, x, y);
+    ctx.fill();
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const time = Date.now() / 500;
+    drawHeart(canvas.width/2, canvas.height/3 + Math.sin(time)*20, 30, 'rgba(249,168,194,0.6)');
+    requestAnimationFrame(animate);
+  }
+
+  // Inicio de la experiencia
+  function startExperience() {
+    document.getElementById('overlay').style.opacity = 0;
+    setTimeout(() => document.getElementById('overlay').style.display = 'none', 1200);
+    showPoem();
+    updateTimer();
+    setInterval(updateTimer, 1000);
+    animate();
+  }
+
+  // Conectar botón
+  document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.getElementById('startButton');
+    startBtn.addEventListener('click', startExperience);
+  });
+</script>
+
+</body>
+</html>
